@@ -1,0 +1,165 @@
+Stage 1: unpaired image translation
+
+Training:
+=========
+python /data/crossmoda2023/query-selected-attention/train.py -n tmp --model uit --netG resnet_9blocks_post --display_id 0
+
+python /data/crossmoda2023/query-selected-attention/train.py -n reuse_styleloss --model uit --netG resnet_9blocks_post --display_id 0
+
+python /data/crossmoda2023/query-selected-attention/train.py -n reuse_style_model --model style --netG resnet_9blocks_style --display_id 0
+
+python /data/crossmoda2023/query-selected-attention/train.py -n reuse_style_contra --model style --netG resnet_9blocks_style --display_id 0
+
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v4 --model style --netG resnet_9blocks_style --display_id 0
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v6 --model style --netG resnet_9blocks_style --display_id 0 --lambda_sobel 5
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v7 --model style --netG resnet_9blocks_style --display_id 0 --lambda_sobel 2
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v8 --model style --netG resnet_9blocks_style --display_id 0
+
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v9 --model style --netG resnet_9blocks_style --display_id 0 --n_epochs 900 --n_epochs_decay 100 --update_html_freq 100
+
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v10 --model style --netG resnet_9blocks_style --display_id 0 --n_epochs 500 --n_epochs_decay 100 --update_html_freq 20
+
+python /data/crossmoda2023/query-selected-attention/train.py -n contrast_v11 --model style --netG resnet_9blocks_style --display_id 0 --n_epochs 600 --n_epochs_decay 0 --update_html_freq 20 --lambda_sobel 0 --lambda_temp 150
+
+
+# baselines:
+python /data/crossmoda2023/query-selected-attention/train.py -n baseline_all --model bsl --netG resnet_9blocks_bsl --display_id 0 --n_epochs 500 --n_epochs_decay 100 --update_html_freq 20
+
+python inference3d_baseline.py -n baseline_all --model bsl --netG resnet_9blocks_bsl
+
+python inference3d_baseline.py -n baseline_etz --model bsl --netG resnet_9blocks_bsl
+python inference3d_baseline.py -n baseline_ldn --model bsl --netG resnet_9blocks_bsl
+python inference3d_baseline.py -n baseline_ukm --model bsl --netG resnet_9blocks_bsl
+
+
+Inference:
+==========
+python inference3d.py -n reuse_enc --model uit --netG resnet_9blocks_post
+
+python inference3d.py -n reuse_styleloss --model uit --netG resnet_9blocks_post
+
+python inference3d.py -n reuse_style_model --model style --netG resnet_9blocks_style
+
+python inference3d.py -n reuse_style_contra_inst_temp --model style --netG resnet_9blocks_style
+
+python inference3d.py -n contrast_v3 --model style --netG resnet_9blocks_style --epoch 200
+
+python inference3d.py -n contrast_v4 --model style --netG resnet_9blocks_style
+
+python inference3d.py -n contrast_v5 --model style --netG resnet_9blocks_style
+
+python inference3d.py -n contrast_v7 --model style --netG resnet_9blocks_style
+
+python inference3d.py -n contrast_v9 --model style --netG resnet_9blocks_style
+
+python inference3d.py -n contrast_v10 --model style --netG resnet_9blocks_style
+python inference3d_slerp.py -n contrast_v10 --model style --netG resnet_9blocks_style
+
+
+Extract embedding
+=================
+python get_embeddings.py -n contrast_v3 --model style --netG resnet_9blocks_style
+python -W ignore get_embeddings.py -n contrast_v5 --model style --netG resnet_9blocks_style
+python -W ignore get_embeddings.py -n contrast_v7 --model style --netG resnet_9blocks_style
+python -W ignore get_embeddings.py -n contrast_v9 --model style --netG resnet_9blocks_style
+python -W ignore get_embeddings.py -n contrast_v10 --model style --netG resnet_9blocks_style
+
+python -W ignore latent_analysis.py --dir /data/crossmoda2023/query-selected-attention/checkpoints/contrast_v5/result/embeddings
+python -W ignore latent_analysis.py --dir /data/crossmoda2023/query-selected-attention/checkpoints/contrast_v9/result/embeddings
+python -W ignore latent_analysis.py --dir /data/crossmoda2023/query-selected-attention/checkpoints/contrast_v10/result/embeddings
+
+
+python inference3d.py -n contrast_v10 --model style --netG resnet_9blocks_style
+
+
+['ldn_134' 'etz_176' 'ldn_88' 'ukm_53' 'ukm_107' 'ukm_128' 'ukm_106']
+
+python style_interpolate.py -n contrast_v5 --model style --netG resnet_9blocks_style
+
+-- conditioned discriminator
+-- loss functions to enforce the fed in condition corresponds to styles
+-- co-training to enhance consistency between two T1 with same T2 to have same styles.
+-- maybe not the same encoder...
+
+-- different from another real_B
+
+
+
+# Seg------------------------
+python -W ignore train.py -n basic -c 4 --max_epoch 2000 --skip_val_epoch 2000 --html_iter 50
+python -W ignore train_slerp.py -n slerp -c 4 --max_epoch 2000 --skip_val_epoch 2000 --html_iter 50
+python -W ignore train.py -n slerp -t Slerp -c 4 --max_epoch 2000 --skip_val_epoch 2000 --html_iter 50
+python -W ignore test.py -n basic -c 4 --epoch current_model --test_dir /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI --save_output
+python -W ignore test.py -n basic -c 4 --epoch epoch_1175 --test_dir /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI --save_output
+
+python -W ignore test.py -n basic -t Basic -c 4 --epoch current_model --test_dir /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI --save_output
+python -W ignore test.py -n slerp -t Slerp -c 4 --epoch current_model --test_dir /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI --save_output
+
+
+python -W ignore test.py -n basic_no_over -t Basic -c 4 --epoch current_model --test_dir /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI --save_output
+python -W ignore test.py -n slerp_no_over -t Slerp -c 4 --epoch current_model --test_dir /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI --save_output
+
+
+python -W ignore train.py -n tmp -c 4 -t Basic --max_epoch 2000 --skip_val_epoch 2000 --html_iter 200 -bs 2 
+python -W ignore train.py -n tmp1 -c 4 -t Slerp --max_epoch 2000 --skip_val_epoch 2000 --html_iter 200 -bs 2 
+
+
+
+====== nnunet ===========
+nnUNetv2_plan_and_preprocess -d 550 --verify_dataset_integrity -c 3d_fullres
+
+nnUNetv2_train 550 3d_fullres 0 -tr nnUNetTrainer_crossmoda
+
+nnUNetv2_train 551 3d_fullres 0 -tr nnUNetTrainer_crossmoda
+
+########### Fine-tuning ###########
+nnUNetv2_train 511 3d_fullres 0 -tr nnUNetTrainer_FT 
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI -o /data/crossmoda2023/data/crossmoda23_validation/submission/0119/predict_0119 -d 550 -c 3d_fullres -f 0 -tr nnUNetTrainer_crossmoda
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI -o /data/crossmoda2023/data/crossmoda23_validation/submission/0202/predict_0202 -d 551 -c 3d_fullres -f 0 -tr nnUNetTrainer_crossmoda
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI_norm -o /data/crossmoda2023/data/crossmoda23_validation/submission/0205/predict_0205_norm -d 511 -c 3d_fullres -f 0 -tr nnUNetTrainer_FT
+
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI -o /data/crossmoda2023/data/crossmoda23_validation/submission/Dyn/predit -d 552 -c 3d_fullres -f 0 -tr nnUNetTrainer_crossmoda
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI -o /data/crossmoda2023/data/crossmoda23_validation/submission/NoAdapt/predit -d 553 -c 3d_fullres -f 0 -tr nnUNetTrainer_crossmoda
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI -o /data/crossmoda2023/data/crossmoda23_validation/submission/Style/predit -d 554 -c 3d_fullres -f 0 -tr nnUNetTrainer_crossmoda
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI -o /data/crossmoda2023/data/crossmoda23_validation/submission/oneNet/predit -d 555 -c 3d_fullres -f 0 -tr nnUNetTrainer_crossmoda
+
+# get pseudo label
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_training/tgtImageROI_norm -o /data/crossmoda2023/data/crossmoda23_validation/submission/0205/PseudoLabel -d 511 -c 3d_fullres -f 0 -tr nnUNetTrainer_FT
+
+# Fine-tune inference
+
+nnUNetv2_predict -i /data/crossmoda2023/data/crossmoda23_validation/tgtImageROI_norm -o /data/crossmoda2023/data/crossmoda23_validation/submission/0208/predict_0208_FT -d 999 -c 3d_fullres -f 0 -tr nnUNetTrainer_FT
+
+
+---- self-training ----------
+
+nnUNetv2_train 999 3d_fullres 0 -tr nnUNetTrainer_FT 
+nnUNetv2_train 999 3d_fullres 0 -tr nnUNetTrainer_FT1
+
+
+# recover to entire image
+-------------------------
+
+- filename: remove _0000_pred
+python /data/crossmoda2023/utils/invert_pred.py
+
+
+
+FmitF:
+======
+
+python -W ignore run_training_2D.py -n fold1 -k 1 -d MSSEG16 -m flair -tm flair --offline --skip_gen --nid 8 --train_size 96 96 -bs 64
+
+python -W ignore run_training_2D.py -n size64 -k 1 -d MSSEG16 -m flair -tm flair --offline --skip_gen --nid 8 --train_size 64 64 -bs 64
+
+
+
+ldn 185/186
+ukm 174
