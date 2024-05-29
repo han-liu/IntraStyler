@@ -1,0 +1,6 @@
+dominate==2.4.0
+GPUtil==1.4.0
+packaging==21.3
+tensorboard==1.15.0
+tensorboardX==2.2
+visdom==0.1.8.9
